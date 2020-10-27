@@ -1,10 +1,11 @@
 const express = require('express');
+const cors = require('cors');
 const generate= require('shortid').generate;
 
 //instantiate server app
 const app=express();
 app.use(express.json());
-
+app.use(cors())
 //pick a port
 const PORT = 2222;
 
@@ -33,19 +34,27 @@ app.put('/api/users/:id', (req,res)=>{
     const userIndex = users.findIndex(user => user.id === id);
     //returns -1 if not found
 
-    if(userIndex !== -1){
-        //success
-        //edit data
-        users[userIndex] = { id, name, bio };
-        //return data
-        res.status(200).json({ id, name, bio });
-    }else{
-        //not found
-        res.status(400).json({
-            message: `No user found with id ${id}`
-        });
-    }
 
+    try{    
+        // throw "ERRORERRORERROR";
+        //validate input
+        if(!name || !bio){
+            //if invalid, return an error
+            res.status(400).json({message:`Error editing user: Name and Bio are required`});
+        }else if(userIndex !== -1){
+            //success, edit data
+            users[userIndex] = { id, name, bio };
+            //return data
+            res.status(200).json({ id, name, bio });
+        }else{
+            //failed, not found
+            res.status(400).json({
+                message: `Error editing user: No user found with id ${id}`
+            });
+        }
+    } catch(err){
+        res.status(500).json({message:`Error editing user: Server error: ${err}`})
+    }
 });
 
 // DELETE: /api/users/:id
@@ -55,25 +64,21 @@ app.put('/api/users/:id', (req,res)=>{
 //err: 404 user with id not found
 //err: ?500 server error removing user from db
 app.delete('/api/users/:id', (req,res)=>{
+    try{
+        const { id } = req.params;
+        const foundUser = users.find(user => user.id === id);
 
-    const { id } = req.params;
-    const foundUser = users.find(user => user.id === id);
-
-    if(!foundUser){
-        res.status(400).json({
-            message:`No user found with id ${id}`
-        });
-    }else{
-        users = users.filter(user => user.id !== id);
-        res.status(200).json(foundUser);
+        if(!foundUser){
+            res.status(400).json({
+                message:`Error deleting user: No user found with id ${id}`
+            });
+        }else{
+            users = users.filter(user => user.id !== id);
+            res.status(200).json(foundUser);
+        }
+    }catch(err){
+        res.status(500).json({message:`Error deleting user: Server error ${err}`})
     }
-//not sure how to add a server error clause
-//look this up
-
-
-//fix: "Cannot DELETE /api/users/wJCr24HFs"
-//doesn't display my error message
-//id matches an existing id
 });
 
 // POST: /api/users
@@ -81,26 +86,38 @@ app.delete('/api/users/:id', (req,res)=>{
 //------------------------
 app.post('/api/users', (req,res) => {
     const { name, bio } = req.body;
+    try{
+        //error to user if name or bio are missing
+        if(!name || !bio){
+            res.status(400).json({
+                message:'Error adding user: name and bio are required to post a new user'
+            })
+        }else if (
+            //check if name already exists
+            users.find(user => user.name === name)
+        ){
+            //error if duplicate
+            res.status(400).json({
+                message:`Error adding user: A user with the name ${name} already exists.`
+            });
+        } else {
+            //if data passes the check, then post it
 
-    //error to user if name or bio are missing
-    if(!name || !bio){
-        res.status(400).json({
-            message:'name and bio are required to post a new user'
-        })
-    }else{
-        //if data passes the check, then post it
+            //make the new entry from the request body
+            const newUser = {
+                id:generate(),
+                name,
+                bio
+            }
 
-        //make the new entry from the request body
-        const newUser = {
-            id:generate(),
-            name,
-            bio
+            //add to db
+            users.push(newUser);
+            res.status(201).json(newUser);
         }
-
-        //add to db
-        users.push(newUser);
-        res.status(201).json(newUser);
+    } catch (err) {
+        res.status(500).json({message:`Error adding user: Server error: ${err}`})
     }
+
 });
 
 // GET: /api/users/:id
@@ -110,14 +127,19 @@ app.get('/api/users/:id', (req,res) => {
     const { id } = req.params;
     const foundUser = users.find(user => user.id === id);
     
-    //if user id is not found:
-    if (!foundUser){
-        //return relevant error
-        res.status(404).json({message:`No user found with id: ${id}`});
-    }else{
-        //send status code and data
-        res.status(200).json(foundUser);
+    try{    
+        //if user id is not found:
+        if (!foundUser){
+            //return relevant error
+            res.status(404).json({message:`No user found with id: ${id}`});
+        }else{
+            //send status code and data
+            res.status(200).json(foundUser);
+        }
+    }catch(err){
+        res.status(500).json({message:`Error getting user: Server error ${err}`})
     }
+
 });
 
 
@@ -125,7 +147,13 @@ app.get('/api/users/:id', (req,res) => {
 // Returns an array users.
 //------------------------
 app.get('/api/users', (req,res) => {
-    res.json(users);
+    
+    try{    
+        res.json(users);
+    }catch(err){
+        res.status(500).json({message:`Error getting user list: Server error ${err}`})
+    }
+
 });
 
 
