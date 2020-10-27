@@ -26,7 +26,27 @@ let users = [{
 // 1. Updates the user with the specified id using data from the request body. 
 // 2. Returns the modified user
 //------------------------
+app.put('/api/users/:id', (req,res)=>{
+    const { id } = req.params;
+    const { name, bio } = req.body;
 
+    const userIndex = users.findIndex(user => user.id === id);
+    //returns -1 if not found
+
+    if(userIndex !== -1){
+        //success
+        //edit data
+        users[userIndex] = { id, name, bio };
+        //return data
+        res.status(200).json({ id, name, bio });
+    }else{
+        //not found
+        res.status(400).json({
+            message: `No user found with id ${id}`
+        });
+    }
+
+});
 
 // DELETE: /api/users/:id
 // Removes the user with the specified id and returns the deleted user.
