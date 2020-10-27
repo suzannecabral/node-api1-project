@@ -1,10 +1,11 @@
 const express = require('express');
+const cors = require('cors');
 const generate= require('shortid').generate;
 
 //instantiate server app
 const app=express();
 app.use(express.json());
-
+app.use(cors())
 //pick a port
 const PORT = 2222;
 
