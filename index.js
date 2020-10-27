@@ -9,22 +9,18 @@ app.use(express.json());
 const PORT = 2222;
 
 //make some data
-const data = [{
-    id: "a_unique_id", // hint: use the shortid npm package to generate it
+const users = [{
+    id: generate(), // hint: use the shortid npm package to generate it
     name: "Jane Doe", // String, required
     bio: "Not Tarzan's Wife, another Jane",  // String, required
   },
 ];
 
 
-// POST: /api/users
-// Creates a user using the information sent inside the request body.
-//------------------------
 
 
-// GET: /api/users
-// Returns an array users.
-//------------------------
+
+
 
 
 // GET: /api/users/:id
@@ -43,13 +39,53 @@ const data = [{
 //------------------------
 
 
-//CATCHALL ERROR
+
+// POST: /api/users
+// Creates a user using the information sent inside the request body.
 //------------------------
+app.post('/api/users', (req,res) => {
+    const { name, bio } = req.body;
+
+    //error to user if name or bio are missing
+    if(!name || !bio){
+        res.status(400).json({
+            message:'name and bio are required to post a new user'
+        })
+    }else{
+        //if data passes the check, then post it
+
+        //make the new entry from the request body
+        const newUser = {
+            id:generate(),
+            name,
+            bio
+        }
+
+        //add to db
+        users.push(newUser);
+        res.status(201).json(newUser);
+    }
+});
+
+
+// GET: /api/users
+// Returns an array users.
+//------------------------
+app.get('/api/users', (req,res) => {
+    res.json(users);
+});
 
 
 //server is on:
-app.get('/', (req,res)=>{
+app.get('/api/', (req,res)=>{
     res.send("The server is running, better go catch it.");
+});
+
+
+//CATCHALL ERROR
+//------------------------
+app.get('*', (req,res)=>{
+    res.status(404).json({ message: '404: Not found'})
 });
 
 
